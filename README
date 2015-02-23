@@ -1,8 +1,22 @@
+Bootage - a parallel initscript launcher
+========================================
+It's a bit like poor man's upstart ...
 
-Quick documentation
+Abstract
+--------
+Bootage is a task execution program providing a small subset of the
+functionality found in sysvinit, upstart etc. It collects data about
+dependencies between a set of startup script and then executes these scripts
+in dependency order. This program was intended to be a faster replacement for
+the sysvinit process. With the advent of systemd and other sysvinit
+replacements, bootage should be retired in favor of something maintained by
+the larger Linux community (see: https://openxt.atlassian.net/browse/OXT-59).
+
+Description
 -------------------
-
-Format of optional config file /etc/bootage.conf:
+Bootage will parse an optional config file found at /etc/bootage.conf on
+startup. Blank lines and lines starting with # are ignored. Entries in this
+file are in the following format:
 
 script NAME
 dep DEPENDENCY...
@@ -16,25 +30,30 @@ script ssh
 dep network autofs
 start 2 3 4
 
-Blank lines and lines STARTING with # are ignored
+The directives from the config file have the following meaning:
+script: The name of the script.
+dep:    Other scripts that must be run before this one.
+start:  Run levels at which this script will be run.
+stop:   Presumably the run levels where this script will be stopped during
+        shutdown but this doesn't seem to be implemented.
+block:  The runlevels at which the script will not be run EXCEPT in the case
+        where a 'start' stanza explicitly requires it. The purpose of this
+        behavior is unknown.
 
-Any scripts found in the rcX.d directory but not mentioned, will
-auto-depend on every script with a lower sequence number.
-
-Scripts that have a dep line in the config file will not depend
-on anything not explicitly specified there.
-
+Any scripts found in the rcX.d directory but not mentioned in bootage.conf will
+auto-depend on every script with a lower sequence number. Scripts that have a
+dep line in the config file will depend only on the scripts explicitly stated.
 Dependencies that are not to be started will be ignored.
 
-All scripts will be started as soon as their dependencies have
-completed startup.
+All scripts will be started as soon as their dependencies have completed
+startup. Scripts that are mentioned in bootage.conf but don't exist in rcX.d
+will be run if the runlevel matches.
 
-Scripts that are mentioned in bootage.conf but don't
-exist in rcX.d will be run if the runlevel matches.
+If a script is mentioned in rcX.d and the config file it will be started
+regardless of any "start" directive.
 
-Scripts that are blocked will not be run in the listed
-runlevels EXCEPT if a following "start" stanza explicitly
-requests it (now whyever would you want to do that!?)
+Dependencies
+------------
+Bootage links against librt. At runtime it needs startup scripts to do anything
+meaningful.
 
-If a script is mentioned in rcX.d and the config file it
-will be started regardless of any "start" directive.
